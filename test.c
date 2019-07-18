@@ -26,15 +26,7 @@ typedef struct {
     const char* json;
 }lept_context;
 
-int lept_parse(lept_value* v, const char* json) {
-    lept_context c;
-    assert(v != NULL);
-    c.json = json;
-    v->type = LEPT_NULL;
-    lept_parse_whitespace(&c);
-    return lept_parse_value(&c, v);
-}
-
+// 跳过要解析的json字符串中的空白,制表符,换行
 static void lept_parse_whitespace(lept_context* c) {
     const char* p = c->json;
     while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r')
@@ -42,6 +34,7 @@ static void lept_parse_whitespace(lept_context* c) {
     c->json = p;
 }
 
+// 解析NULL
 static int lept_parse_null(lept_context* c, lept_value* v) {
     EXPECT(c, 'n');
     if (c->json[0] != 'u' || c->json[1] != 'l' || c->json[2] != 'l')
@@ -51,7 +44,13 @@ static int lept_parse_null(lept_context* c, lept_value* v) {
     return LEPT_PARSE_OK;
 }
 
-static 
+static int lept_parse_value(lept_context* c, lept_value* v) {
+    switch (*c->json) {
+    case 'n': return lept_parse_null(c, v);
+    case '\0': return LEPT_PARSE_EXPECT_VALUE;
+    default: return LEPT_PARSE_INVALID_VALUE;
+    }
+}
 
 static void test_parse_null() {
     lept_value v;
@@ -62,6 +61,16 @@ static void test_parse_null() {
 
 static void test_parse() {
     test_parse_null();
+}
+
+// 解析函数
+int lept_parse(lept_value* v, const char* json) {
+    lept_context c;
+    assert(v != NULL);
+    c.json = json;
+    v->type = LEPT_NULL;
+    lept_parse_whitespace(&c);
+    return lept_parse_value(&c, v);
 }
 
 int main() {
